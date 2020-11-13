@@ -13,12 +13,12 @@ queue = Queue()
 users = []
 addresses = []
 
-PORT = 8888
-SERVER = socket.gethostbyname(socket.gethostname())
+PORT = 7779
+SERVER = "localhost"
 ADDR = (SERVER, PORT)
 # For servers
-PORT1 = 5050
-PORT2 = 9999
+PORT1 = 7777
+PORT2 = 7778
 ADDR1 = (SERVER, PORT1)
 ADDR2 = (SERVER, PORT2)
 
@@ -45,6 +45,10 @@ def start_shell():
             register_user(cmd)
         elif "de-register" in cmd:
             de_register_user(cmd)
+        elif "add_subject" in cmd:
+            add_subject_user(cmd)
+        elif "del_subject" in cmd:
+            del_subject_user(cmd)
         else:
             print("Wrong Command")
 
@@ -59,7 +63,7 @@ def register_user(cmd):
     msg = bytes(f'{len(msg):<{HEADERSIZE}}', FORMAT) + msg
     try:
         client.sendto(msg, ADDR1)
-        client.sendto(msg, ADDR2)
+        # client.sendto(msg, ADDR2)
     except:
         print("Server not responding")
 
@@ -76,6 +80,36 @@ def de_register_user(cmd):
         client.sendto(msg, ADDR2)
     except:
         print("Error sending message")
+
+
+def add_subject_user(cmd):
+    global RQ
+    RQ = RQ + 1
+
+    info = cmd.replace("add_subject ", "")
+    data = {1: "ADD_SUBJECT", 2: RQ, 3: info, 4: SERVER, 5: PORT}
+    msg = pickle.dumps(data)
+    msg = bytes(f'{len(msg):<{HEADERSIZE}}', FORMAT) + msg
+    try:
+        client.sendto(msg, ADDR1)
+        # client.sendto(msg, ADDR2)
+    except:
+        print("Server not responding")
+
+
+def del_subject_user(cmd):
+    global RQ
+    RQ = RQ + 1
+
+    info = cmd.replace("del_subject ", "")
+    data = {1: "DEL_SUBJECT", 2: RQ, 3: info, 4: SERVER, 5: PORT}
+    msg = pickle.dumps(data)
+    msg = bytes(f'{len(msg):<{HEADERSIZE}}', FORMAT) + msg
+    try:
+        client.sendto(msg, ADDR1)
+        # client.sendto(msg, ADDR2)
+    except:
+        print("Server not responding")
 
 
 def handle_server_msg():
