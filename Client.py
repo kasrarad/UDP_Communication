@@ -78,6 +78,36 @@ def de_register_user(cmd):
         print("Error sending message")
 
 
+def add_subject_user(cmd):
+    global RQ
+    RQ = RQ + 1
+
+    info = cmd.replace("add_subject ", "")
+    data = {1: "ADD_SUBJECT", 2: RQ, 3: info, 4: SERVER, 5: PORT}
+    msg = pickle.dumps(data)
+    msg = bytes(f'{len(msg):<{HEADERSIZE}}', FORMAT) + msg
+    try:
+        client.sendto(msg, ADDR1)
+        client.sendto(msg, ADDR2)
+    except:
+        print("Server not responding")
+
+
+def del_subject_user(cmd):
+    global RQ
+    RQ = RQ + 1
+
+    info = cmd.replace("del_subject ", "")
+    data = {1: "DEL_SUBJECT", 2: RQ, 3: info, 4: SERVER, 5: PORT}
+    msg = pickle.dumps(data)
+    msg = bytes(f'{len(msg):<{HEADERSIZE}}', FORMAT) + msg
+    try:
+        client.sendto(msg, ADDR1)
+        client.sendto(msg, ADDR2)
+    except:
+        print("Server not responding")
+
+
 def handle_server_msg():
     connected = True
     while connected:

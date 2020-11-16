@@ -3,8 +3,6 @@ import socket
 import threading
 import time
 import pickle
-from queue import Queue
-
 
 SERVER_NUM = 1
 server = socket.socket()
@@ -15,18 +13,12 @@ ADDR = (HOST, PORT)
 MAX_MSG_SIZE = 1500
 FORMAT = 'utf_8'
 
-# We need at least two threads (one for listening and one for sending message)
-# NUMBER_OF_THREADS = The number of threads for listening
-NUMBER_OF_THREADS = 2
-THREAD_NUMBER = [1, 2]
-queue = Queue()
 users = []
 addresses = []
+subjects = []
 
 # Length of massage
 HEADERSIZE = 10
-# We close the connection when the server received this message
-DISCONNECT_MESSAGE = "DISCONNECT"
 
 
 def create_socket():
@@ -63,7 +55,6 @@ def bind_socket():
 
         # Bind socket to the (host, port)
         server.bind(ADDR)
-        #server.bind(('', PORT))
 
         if SERVER_NUM == 0:
             print(f"[LISTENING] Server A is listening on {HOST}")
@@ -81,10 +72,6 @@ def start_shell():
 
         if cmd == "list":
             list_users()
-        elif "select" in cmd:
-            address = get_user(cmd)
-            if address is not None:
-                send_user_commands(address)
         else:
             print("Wrong Command")
 
@@ -96,58 +83,41 @@ def list_users():
         print(results)
 
 
-def get_user(cmd):
-    try:
-        user_id = cmd.replace("select ", "")
-        user_id = int(user_id)
-        address = users[user_id]
-        return address
-    except:
-        print("Not Valid User")
-
-
-def send_user_commands(addr):
+def handle_client():
     global server
     while True:
         try:
-            cmd = input()
-            if cmd == "quit":
-                break
-            #if len(cmd) > 0:
-            #    server.sendto("", addr)
-        except:
-            print("Error sending message")
-            break
-
-
-def handle_client():
-    global server
-    connected = True
-    while connected:
-        try:
             data, addr = server.recvfrom(MAX_MSG_SIZE)
+            # Check that the message length to be not zero
+            if data:
+                thread = threading.Thread(target=handle_data, args=(data, addr))
+                thread.start()
+                print(f"[ACTIVE CONNECTION] {threading.activeCount() - 1}")
         except socket.timeout:
             server.close()
-            connected = False
-            print("Stop")
+            print("Server stopped")
             break
-        # Check that the message length to be not zero
-        if data:
-            #time.sleep(10)
-            print("Message received from client: " + "IP: " + addr[0] + "Port: " + str(addr[1]))
-            # Get message length (from header) and Convert it to the integer
-            msg_length = int(data[:HEADERSIZE])
-            if msg_length <= 1028:
-                data = pickle.loads(data[HEADERSIZE:])
-                if data[1] == DISCONNECT_MESSAGE:
-                    connected = False
-                    print("Connection End")
-                elif data[1] == "REGISTER":
-                    handle_registration(data, addr)
-                elif data[1] == "DE-REGISTER":
-                    handle_registration(data, addr)
-            else:
-                print("Message length is more than the buffer size")
+
+    print("Done")
+
+
+def handle_data(data, addr):
+    time.sleep(5)
+    print("Message received from client: " + "IP: " + addr[0] + "Port: " + str(addr[1]))
+    # Get message length (from header) and Convert it to the integer
+    msg_length = int(data[:HEADERSIZE])
+    if msg_length <= 1028:
+        data = pickle.loads(data[HEADERSIZE:])
+        if data[1] == "REGISTER":
+            handle_registration(data, addr)
+        elif data[1] == "DE-REGISTER":
+            handle_registration(data, addr)
+        elif data[1] == "ADD_SUBJECT":
+            handle_subject(data, addr)
+        elif data[1] == "DEL_SUBJECT":
+            handle_subject(data, addr)
+    else:
+        print("Message length is more than the buffer size")
 
 
 def handle_registration(cmd, addr):
@@ -162,6 +132,7 @@ def handle_registration(cmd, addr):
         if check:
             users.append(cmd)
             addresses.append(addr)
+            subjects.append([])
             data = {1: "REGISTERED", 2: cmd[2]}
         else:
             data = {1: "REGISTER-DENIED", 2: cmd[2], 3: "Name already exist. Use another name"}
@@ -184,34 +155,50 @@ def handle_registration(cmd, addr):
         print("Error sending message")
 
 
-def start_threads():
-    for _ in range(NUMBER_OF_THREADS):
-        t = threading.Thread(target=job)
-        t.daemon = True
-        t.start()
+def handle_subject(cmd, addr):
+    if cmd[1] == "ADD_SUBJECT":
+        data = cmd[3].split()
+        check = False
+        for i in range(len(users)):
+            if users[i][3] == data[0]:
+                check = True
+                user_id = i
+        if check:
+            for k in range(1, len(data)):
+                if data[k] not in subjects[user_id]:
+                    subjects[user_id].append(data[k])
+            data = {1: "SUBJECTS-UPDATED", 2: cmd[2], 3: subjects[user_id]}
+        else:
+            data = {1: "SUBJECTS-REJECTED", 2: cmd[2], 3: "Name does not exist."}
+
+    if cmd[1] == "DEL_SUBJECT":
+        data = cmd[3].split()
+        check = False
+        for i in range(len(users)):
+            if users[i][3] == data[0]:
+                check = True
+                user_id = i
+        if check:
+            for k in range(1, len(data)):
+                if data[k] in subjects[user_id]:
+                    subjects[user_id].remove(data[k])
+            data = {1: "SUBJECTS-UPDATED", 2: cmd[2], 3: subjects[user_id]}
+        else:
+            data = {1: "SUBJECTS-REJECTED", 2: cmd[2], 3: "Name does not exist."}
+
+    msg = pickle.dumps(data)
+    msg = bytes(f'{len(msg):<{HEADERSIZE}}', FORMAT) + msg
+    try:
+        server.sendto(msg, addr)
+    except:
+        print("Error sending message")
 
 
-def job():
+def start_thread():
     global server
-    while True:
-        x = queue.get()
-        if x == 1:
-            create_socket()
-            bind_socket()
-            handle_client()
-        if x == 2:
-            create_socket()
-            #bind_socket()
-            handle_client()
-
-        queue.task_done()
-
-
-def create_threads():
-    for x in THREAD_NUMBER:
-        queue.put(x)
-
-    queue.join()
+    create_socket()
+    bind_socket()
+    handle_client()
 
 
 # Start the thread for shell
@@ -223,12 +210,14 @@ t.start()
 def start():
     global server
     global SERVER_NUM
+    print(f"[ACTIVE CONNECTION] {threading.activeCount() - 1}")
     SERVER_NUM = (SERVER_NUM + 1) % 2
-    start_threads()
-    create_threads()
+    t1 = threading.Thread(target=start_thread)
+    t1.start()
+    t1.join()
 
 
-schedule.every(3).seconds.do(start)
+schedule.every(1).seconds.do(start)
 
 while True:
     schedule.run_pending()
