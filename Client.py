@@ -13,18 +13,20 @@ queue = Queue()
 users = []
 addresses = []
 
+# IP and Port of the client
 PORT = 8888
 SERVER = socket.gethostbyname(socket.gethostname())
 ADDR = (SERVER, PORT)
 # For servers
+NEW_PORT = 0
+NEW_SERVER = ""
 PORT1 = 5050
 PORT2 = 9999
 ADDR1 = (SERVER, PORT1)
 ADDR2 = (SERVER, PORT2)
 
 HEADERSIZE = 10
-# We close the connection when the server received this message
-DISCONNECT_MESSAGE = "DISCONNECT"
+
 func = ""
 RQ = 0
 name = ""
@@ -43,8 +45,12 @@ def start_shell():
             break
         elif "register" in cmd:
             register_user(cmd)
-        elif "de-register" in cmd:
+        elif "de-reg" in cmd:
             de_register_user(cmd)
+        elif "add_subject" in cmd:
+            add_subject_user(cmd)
+        elif "del_subject" in cmd:
+            del_subject_user(cmd)
         else:
             print("Wrong Command")
 
@@ -65,20 +71,25 @@ def register_user(cmd):
 
 
 def de_register_user(cmd):
+    global NEW_SERVER
+    global NEW_PORT
     global RQ
     RQ = RQ + 1
 
-    user_name = cmd.replace("de-register ", "")
+    user_name = cmd.replace("de-reg ", "")
     data = {1: "DE-REGISTER", 2: RQ, 3: user_name}
     msg = pickle.dumps(data)
     msg = bytes(f'{len(msg):<{HEADERSIZE}}', FORMAT) + msg
     try:
-        client.sendto(msg, ADDR2)
+        NEW_ADDR = (NEW_SERVER,NEW_PORT)
+        client.sendto(msg, NEW_ADDR)
     except:
         print("Error sending message")
 
 
 def add_subject_user(cmd):
+    global NEW_SERVER
+    global NEW_PORT
     global RQ
     RQ = RQ + 1
 
@@ -87,13 +98,15 @@ def add_subject_user(cmd):
     msg = pickle.dumps(data)
     msg = bytes(f'{len(msg):<{HEADERSIZE}}', FORMAT) + msg
     try:
-        client.sendto(msg, ADDR1)
-        client.sendto(msg, ADDR2)
+        NEW_ADDR = (NEW_SERVER, NEW_PORT)
+        client.sendto(msg, NEW_ADDR)
     except:
         print("Server not responding")
 
 
 def del_subject_user(cmd):
+    global NEW_SERVER
+    global NEW_PORT
     global RQ
     RQ = RQ + 1
 
@@ -102,26 +115,31 @@ def del_subject_user(cmd):
     msg = pickle.dumps(data)
     msg = bytes(f'{len(msg):<{HEADERSIZE}}', FORMAT) + msg
     try:
-        client.sendto(msg, ADDR1)
-        client.sendto(msg, ADDR2)
+        NEW_ADDR = (NEW_SERVER, NEW_PORT)
+        client.sendto(msg, NEW_ADDR)
     except:
         print("Server not responding")
 
 
 def handle_server_msg():
+    global NEW_SERVER
+    global NEW_PORT
+
     connected = True
     while connected:
         data, addr = client.recvfrom(MAX_MSG_SIZE)
         # Check that the message length to be not zero
         if data:
             print("Message received from server: " + "IP: " + addr[0] + "Port: " + str(addr[1]))
+            NEW_SERVER = addr[0]
+            NEW_PORT = addr[1]
             # Get message length (from header) and Convert it to the integer
             msg_length = int(data[:HEADERSIZE])
             if msg_length <= 1028:
                 d = pickle.loads(data[HEADERSIZE:])
-                if d[1] == DISCONNECT_MESSAGE:
-                    connected = False
-                    print("Connection End")
+                if d[1] == "CHANGE-SERVER":
+                    NEW_SERVER = d[2]
+                    NEW_PORT = d[3]
                 print(d)
             else:
                 print("Message length is more than the buffer size")
