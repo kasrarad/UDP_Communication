@@ -4,7 +4,7 @@ import threading
 import time
 import pickle
 
-from functions import list_register_file,check_register_file,append_register_file,delete_register_entry,get_users,get_addresses
+from functions import list_register_file,check_register_file,append_register_file,delete_register_entry,get_users,get_addresses,get_subjects
 
 # IP and PORT of the servers
 PORT1 = 5050
@@ -129,10 +129,9 @@ def handle_client():
     global addresses
     global subjects
 
-    # TODO add subjects
-    ################################## READ FROM FILE (add the NEW ONES to the previous arrays) (users, addresses, subjects) ##################################
     users = get_users()
     addresses = get_addresses()
+    subjects = get_subjects()
 
     while True:
         try:
@@ -253,7 +252,9 @@ def handle_registration(cmd, addr):
             addresses.append(addr)
             subjects.append([])
             data = {1: "REGISTERED", 2: cmd[2]}
-            append_register_file({1: "REGISTERED", 2: cmd[2], 3: cmd[3], 4: cmd[4], 5: cmd[5]}) # output to text file
+            sub = []  # initialize empty subject array for future use
+            new = {1: "REGISTERED", 2: cmd[2], 3: cmd[3], 4: cmd[4], 5: cmd[5], 6: sub}
+            append_register_file(new)  # output to text file
         else:
             data = {1: "REGISTER-DENIED", 2: cmd[2], 3: "Name already exist. Use another name"}
 
@@ -282,6 +283,7 @@ def handle_de_registration(cmd, addr):
             del users[index]
             del addresses[index]
             data = {1: "DE-REGISTER", 2: cmd[2]}
+            delete_register_entry(cmd[3])  # remove from textfile
             msg = pickle.dumps(data)
             msg = bytes(f'{len(msg):<{HEADERSIZE}}', FORMAT) + msg
             try:
@@ -300,18 +302,27 @@ def handle_de_registration(cmd, addr):
 
 
 def handle_subject(cmd, addr):
+    global SERVER
+    global server
+    global users
+    global addresses
+    global subjects
+
     if cmd[1] == "ADD_SUBJECT":
         data = cmd[3].split()
         check = False
-        for i in range(len(users)):
-            if users[i][3] == data[0]:
-                check = True
-                user_id = i
-        if check:
-            for k in range(1, len(data)):
-                if data[k] not in subjects[user_id]:
-                    subjects[user_id].append(data[k])
-            data = {1: "SUBJECTS-UPDATED", 2: cmd[2], 3: subjects[user_id]}
+        subs = []
+        for k in range(1, len(data)):
+            subs.append(data[k])
+
+        for subject in subjects:  # for each user/subject dict in the subjects object
+            if subject[1] == data[0]:       # if the username matches then
+                delete_register_entry(data[0])      # delete the entry in the file
+                new = {1: "REGISTERED", 2: cmd[2], 3: data[0], 4: cmd[4], 5: cmd[5], 6: subs}   # make new dict
+                append_register_file(new)       # add the info again
+                subjects = get_subjects()       # refresh global subjects array
+
+            data = {1: "SUBJECTS-UPDATED", 2: cmd[2], 3: subs}
         else:
             data = {1: "SUBJECTS-REJECTED", 2: cmd[2], 3: "Name does not exist."}
 

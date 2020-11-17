@@ -93,3 +93,19 @@ def get_addresses():
         adds.append((entry[4], entry[5]))  # append each user entry[4],entry[5] should correspond to ip,port
 
     return adds
+
+def get_subjects():
+    reg = []  # container for register file
+    subs = []  # container for adds
+    with open('register.pickle', 'rb') as handle:  # open register file, each line is loaded until end of file error
+        while 1:
+            try:
+                reg.append(pickle.load(handle))
+            except EOFError:
+                break
+
+    for entry in reg:  # for each line in the register file
+        temp = {1: entry[3] , 2: entry[6]}
+        subs.append(temp)  # append each user entry[4],entry[5] should correspond to ip,port
+
+    return subs
