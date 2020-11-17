@@ -64,6 +64,7 @@ def register_user(cmd):
     msg = pickle.dumps(data)
     msg = bytes(f'{len(msg):<{HEADERSIZE}}', FORMAT) + msg
     try:
+        print(ADDR1 + ADDR2)
         client.sendto(msg, ADDR1)
         client.sendto(msg, ADDR2)
     except:
@@ -81,8 +82,10 @@ def de_register_user(cmd):
     msg = pickle.dumps(data)
     msg = bytes(f'{len(msg):<{HEADERSIZE}}', FORMAT) + msg
     try:
+
         NEW_ADDR = (NEW_SERVER,NEW_PORT)
-        client.sendto(msg, NEW_ADDR)
+        print(NEW_ADDR)
+        client.sendto(msg, ADDR2)
     except:
         print("Error sending message")
 

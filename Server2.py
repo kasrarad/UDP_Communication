@@ -4,6 +4,8 @@ import threading
 import time
 import pickle
 
+from functions import list_register_file,check_register_file,append_register_file,delete_register_entry,get_users,get_addresses
+
 # IP and PORT of the servers
 PORT1 = 5050
 PORT2 = 9999
@@ -44,9 +46,9 @@ def create_socket():
         # MAKE new socket
         server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         if SERVER_NUM == 0:
-            server.settimeout(20.0)
+            server.settimeout(300.0)
         else:
-            server.settimeout(40.0)
+            server.settimeout(400.0)
 
     except socket.error as e:
         print("There is an error in socket creation: " + str(e))
@@ -78,6 +80,8 @@ def start_shell():
 
         if cmd == "list":
             list_users()
+        elif cmd == "listregister":
+            list_register_file()
         elif "port" in cmd:
             change_port(cmd)
         elif "ip" in cmd:
@@ -125,7 +129,10 @@ def handle_client():
     global addresses
     global subjects
 
+    # TODO add subjects
     ################################## READ FROM FILE (add the NEW ONES to the previous arrays) (users, addresses, subjects) ##################################
+    users = get_users()
+    addresses = get_addresses()
 
     while True:
         try:
@@ -158,6 +165,8 @@ def handle_server():
     global change_ip_port
 
     ################# SAVE users, addresses, subjects IN FILE (only add the NEW ONES to the previous files) ####################
+    # TODO not sure if its needed to save file because its updated whenever we add, update, or delete
+    # it is possible to dump everything from the text file into a msg and send it when switching
 
     server_addr = (SERVER1, PORT1)
     if change_ip_port:
@@ -244,6 +253,7 @@ def handle_registration(cmd, addr):
             addresses.append(addr)
             subjects.append([])
             data = {1: "REGISTERED", 2: cmd[2]}
+            append_register_file({1: "REGISTERED", 2: cmd[2], 3: cmd[3], 4: cmd[4], 5: cmd[5]}) # output to text file
         else:
             data = {1: "REGISTER-DENIED", 2: cmd[2], 3: "Name already exist. Use another name"}
 
@@ -340,8 +350,7 @@ def delete_user(cmd):
     if check:
         del users[index]
         del addresses[index]
-
-        ######################## Update the file (Delete the user) ##############################
+        delete_register_entry(cmd[3])  # remove from textfile
 
 
 def start_thread():
