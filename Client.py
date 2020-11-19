@@ -84,6 +84,7 @@ def de_register_user(cmd):
     try:
 
         NEW_ADDR = (NEW_SERVER,NEW_PORT)
+        client.sendto(msg, ADDR1)  # TODO change later
         client.sendto(msg, ADDR2)  #TODO change later
     except:
         print("Error sending message")
@@ -101,6 +102,7 @@ def add_subject_user(cmd):
     msg = bytes(f'{len(msg):<{HEADERSIZE}}', FORMAT) + msg
     try:
         NEW_ADDR = (NEW_SERVER, NEW_PORT)
+        client.sendto(msg, ADDR1)  # TODO change addr
         client.sendto(msg, ADDR2)  #TODO change addr
     except:
         print("Server not responding")
@@ -118,7 +120,8 @@ def del_subject_user(cmd):
     msg = bytes(f'{len(msg):<{HEADERSIZE}}', FORMAT) + msg
     try:
         NEW_ADDR = (NEW_SERVER, NEW_PORT)
-        client.sendto(msg, NEW_ADDR)
+        client.sendto(msg, ADDR1)  # TODO change addr
+        client.sendto(msg, ADDR2)  # TODO change addr
     except:
         print("Server not responding")
 

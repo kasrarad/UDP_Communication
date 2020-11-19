@@ -3,7 +3,7 @@ import socket
 import threading
 import time
 import pickle
-from functions import list_register_file,check_register_file,append_register_file,delete_register_entry,get_users,get_addresses,get_subjects
+from functions import *  #list_register_file,check_register_file,append_register_file,delete_register_entry,get_users,get_addresses,get_subjects
 
 # IP and PORT of the servers
 PORT1 = 5050
@@ -89,12 +89,6 @@ def start_shell():
         else:
             print("Wrong Command")
 
-
-def list_users():
-    print("----Users----" + "\n")
-    for i in range(len(users)):
-        results = str(i) + "    " + str(addresses[i][0]) + "    " + str(addresses[i][1]) + "\n"
-        print(results)
 
 
 def change_port(cmd):
@@ -204,6 +198,7 @@ def handle_data(data, addr):
     global server
     global SERVER2
     global PORT2
+    global subjects
 
     if run_server:
         #time.sleep(5)
@@ -216,13 +211,14 @@ def handle_data(data, addr):
                 SERVER2 = data[2]
                 PORT2 = data[3]
             elif data[1] == "REGISTER":
-                handle_registration(data, addr)
+                handle_registration(data, addr,server,users,addresses)
             elif data[1] == "DE-REGISTER":
-                handle_de_registration(data, addr)
+                handle_de_registration(data, addr,server,users,addresses,SERVER2,PORT2)
             elif data[1] == "ADD_SUBJECT":
-                handle_subject(data, addr)
+                handle_subject(data, addr,server,users,addresses,subjects)
             elif data[1] == "DEL_SUBJECT":
-                handle_subject(data, addr)
+                handle_subject(data, addr,server,users,addresses,subjects)
+                subjects = get_subjects()
         else:
             print("Message length is more than the buffer size")
     else:
@@ -231,136 +227,9 @@ def handle_data(data, addr):
         msg_length = int(data[:HEADERSIZE])
         if msg_length <= 1028:
             data = pickle.loads(data[HEADERSIZE:])
-            if data[1] == "DE-REG":
-                delete_user(data)
+            #if data[1] == "DE-REG":
+               # delete_user(data,users)
 
-
-def handle_registration(cmd, addr):
-    global SERVER
-    global server
-    global users
-    global addresses
-
-    if cmd[1] == "REGISTER":
-        check = True
-        for user_name in users:
-            if user_name == cmd[3]:
-                check = False
-        if check:
-            users.append(cmd[3])
-            addresses.append(addr)
-            subjects.append([])
-            data = {1: "REGISTERED", 2: cmd[2]}
-            sub = []  # initialize empty subject array for future use
-            append_register_file({1: "REGISTERED", 2: cmd[2], 3: cmd[3], 4: cmd[4], 5: cmd[5], 6: sub})  # output to text file
-        else:
-            data = {1: "REGISTER-DENIED", 2: cmd[2], 3: "Name already exist. Use another name"}
-
-    msg = pickle.dumps(data)
-    msg = bytes(f'{len(msg):<{HEADERSIZE}}', FORMAT) + msg
-    try:
-        server.sendto(msg, addr)
-    except:
-        print("Error sending message")
-
-
-def handle_de_registration(cmd, addr):
-    global SERVER
-    global server
-    global users
-    global addresses
-
-    if cmd[1] == "DE-REGISTER":
-        check = False
-        index = -1
-        for user_name in users:
-            if user_name == cmd[3]:
-                index = users.index(user_name)
-                check = True
-        if check:
-            del users[index]
-            del addresses[index]
-            data = {1: "DE-REGISTER", 2: cmd[2]}
-            delete_register_entry(cmd[3])  # remove from textfile
-            msg = pickle.dumps(data)
-            msg = bytes(f'{len(msg):<{HEADERSIZE}}', FORMAT) + msg
-            try:
-                server.sendto(msg, addr)
-            except:
-                print("Error sending message")
-
-            server_addr = (SERVER2, PORT2)
-            data1 = {1: "DE-REG", 2: cmd[3]}
-            msg1 = pickle.dumps(data1)
-            msg1 = bytes(f'{len(msg1):<{HEADERSIZE}}', FORMAT) + msg1
-            try:
-                server.sendto(msg1, server_addr)
-            except:
-                print("Error sending message")
-
-
-def handle_subject(cmd, addr):
-    global SERVER
-    global server
-    global users
-    global addresses
-    global subjects
-
-    if cmd[1] == "ADD_SUBJECT":
-        data = cmd[3].split()
-        check = False
-        subs = []
-        for k in range(1, len(data)):
-            subs.append(data[k])
-
-        for subject in subjects:  # for each user/subject dict in the subjects object
-            if subject[1] == data[0]:  # if the username matches then
-                delete_register_entry(data[0])  # delete the entry in the file
-                new = {1: "REGISTERED", 2: cmd[2], 3: data[0], 4: cmd[4], 5: cmd[5], 6: subs}  # make new dict
-                append_register_file(new)  # add the info again
-                subjects = get_subjects()  # refresh global subjects array
-
-            data = {1: "SUBJECTS-UPDATED", 2: cmd[2], 3: subs}
-        else:
-            data = {1: "SUBJECTS-REJECTED", 2: cmd[2], 3: "Name does not exist."}
-
-    if cmd[1] == "DEL_SUBJECT":
-        data = cmd[3].split()
-        check = False
-        for i in range(len(users)):
-            if users[i][3] == data[0]:
-                check = True
-                user_id = i
-        if check:
-            for k in range(1, len(data)):
-                if data[k] in subjects[user_id]:
-                    subjects[user_id].remove(data[k])
-            data = {1: "SUBJECTS-UPDATED", 2: cmd[2], 3: subjects[user_id]}
-        else:
-            data = {1: "SUBJECTS-REJECTED", 2: cmd[2], 3: "Name does not exist."}
-
-    msg = pickle.dumps(data)
-    msg = bytes(f'{len(msg):<{HEADERSIZE}}', FORMAT) + msg
-    try:
-        server.sendto(msg, addr)
-    except:
-        print("Error sending message")
-
-
-def delete_user(cmd):
-    global users
-
-    check = False
-    index = -1
-    for user_name in users:
-        if user_name == cmd[2]:
-            index = users.index(user_name)
-            check = True
-    if check:
-        del users[index]
-        del addresses[index]
-        delete_register_entry(cmd[3])
-        ######################## Update the file (Delete the user) ##############################
 
 
 def start_thread():
