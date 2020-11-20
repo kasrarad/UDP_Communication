@@ -4,6 +4,8 @@ MAX_MSG_SIZE = 1500
 FORMAT = 'utf_8'
 HEADERSIZE = 10
 
+available_subj = ["COEN445", "ENGR301", "SOEN342", "ELEC490"]
+
 
 def list_register_file():
     print("----Register File Contents----" + "\n")
@@ -185,34 +187,41 @@ def handle_de_registration(cmd, addr,server,users,addresses,ip_addr,port_num):
 
 
 def handle_subject(cmd, addr,server,users,addresses,subjects):
-    check = False
+    check = 0
     if cmd[1] == "ADD_SUBJECT":
         data = cmd[3].split()
         name = data[0]
+        data = data.upper()
 
         subs = []
         for k in range(1, len(data)):
+            if data[k] not in available_subj:
+                check = 1
+                break
             if data[k] not in subs:
                 subs.append(data[k])
-
-        for subject in subjects:  # for each user/subject dict in the subjects object
-            if subject[1] == name:  # if the username matches then
-                check = True
-                for item in subject[2]:  # for each subject in the users subject list
-                    if item not in subs:    # if the subject is not part of the updated list then add it
-                        subs.append(item)   # subs now contains old list plus new list
-                delete_register_entry(name)  # delete the entry in the file
-                new = {1: "REGISTERED", 2: cmd[2], 3: name, 4: cmd[4], 5: cmd[5], 6: subs}  # make new dict
-                append_register_file(new)  # add the info again
-                subjects = get_subjects()  # refresh global subjects array
-        if check:
-            data = {1: "SUBJECTS-UPDATED", 2: cmd[2], 3: subs}
-        else:
+        if check == 0:
+            for subject in subjects:  # for each user/subject dict in the subjects object
+                if subject[1] == name:  # if the username matches then
+                    check = 2
+                    for item in subject[2]:  # for each subject in the users subject list
+                        if item not in subs:  # if the subject is not part of the updated list then add it
+                            subs.append(item)  # subs now contains old list plus new list
+                    delete_register_entry(name)  # delete the entry in the file
+                    new = {1: "REGISTERED", 2: cmd[2], 3: name, 4: cmd[4], 5: cmd[5], 6: subs}  # make new dict
+                    append_register_file(new)  # add the info again
+                    subjects = get_subjects()  # refresh global subjects array
+        if check == 0:
             data = {1: "SUBJECTS-REJECTED", 2: cmd[2], 3: "Name does not exist."}
+        elif check == 1:
+            data = {1: "SUBJECTS-REJECTED", 2: cmd[2], 3: "Subject is not in the list of available subjects."}
+        elif check == 2:
+            data = {1: "SUBJECTS-UPDATED", 2: cmd[2], 3: subs}
 
     if cmd[1] == "DEL_SUBJECT":
         data = cmd[3].split()
         name = data[0]
+        data = data.upper()
         subs = []
         for subject in subjects:  # for each user/subject dict in the subjects object
             if subject[1] == name:  # if the username matches then
@@ -246,7 +255,7 @@ def handle_publishing(cmd, addr, server, users, addresses, subjects):
     check = 0
     data = cmd[3].split()
     name = data[0]
-    subj = data[1]
+    subj = data[1].upper()
     words = ""
 
     for i in range(2, len(data)): # paste the message into a string
@@ -255,15 +264,17 @@ def handle_publishing(cmd, addr, server, users, addresses, subjects):
     for subject in subjects:  # for each user/subject dict in the subjects object
         if subject[1] == name:  # check if the user does exist
             check = 1
-            if subj in subject[2]:    # check if the subject is on the user's list
-                check = 3
+            if subj in available_subj:  # check if the subject is in the available list of subject
+                check = 2
+                if subj in subject[2]:    # check if the subject is on the user's list
+                    check = 3
 
     if check == 0:
         data = {1: "PUBLISHED-DENIED", 2: cmd[2], 3: "Name does not exist."}
     elif check == 1:
-        data = {1: "PUBLISHED-DENIED", 2: cmd[2], 3: "Subject does not exist."}
+        data = {1: "PUBLISHED-DENIED", 2: cmd[2], 3: "Subject is not in the list of available subjects."}
     elif check == 2:
-        data = {1: "PUBLISHED-DENIED", 2: cmd[2], 3: "Subject used is not in the user's list."}
+        data = {1: "PUBLISHED-DENIED", 2: cmd[2], 3: "Subject is not in user's list."}
     elif check == 3:
         data = {1: "MESSAGE", 2: name, 3: subj, 4: words}
 
