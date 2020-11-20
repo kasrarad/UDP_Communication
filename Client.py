@@ -14,14 +14,14 @@ users = []
 addresses = []
 
 # IP and Port of the client
-PORT = 8888
+PORT = 7781
 SERVER = socket.gethostbyname(socket.gethostname())
 ADDR = (SERVER, PORT)
 # For servers
 NEW_PORT = 0
 NEW_SERVER = ""
-PORT1 = 5050
-PORT2 = 9999
+PORT1 = 7777
+PORT2 = 7778
 ADDR1 = (SERVER, PORT1)
 ADDR2 = (SERVER, PORT2)
 
@@ -51,6 +51,8 @@ def start_shell():
             add_subject_user(cmd)
         elif "del_subject" in cmd:
             del_subject_user(cmd)
+        elif "publish" in cmd:
+            publishing_user(cmd)
         else:
             print("Wrong Command")
 
@@ -116,6 +118,24 @@ def del_subject_user(cmd):
 
     info = cmd.replace("del_subject ", "")
     data = {1: "DEL_SUBJECT", 2: RQ, 3: info, 4: SERVER, 5: PORT}
+    msg = pickle.dumps(data)
+    msg = bytes(f'{len(msg):<{HEADERSIZE}}', FORMAT) + msg
+    try:
+        NEW_ADDR = (NEW_SERVER, NEW_PORT)
+        client.sendto(msg, ADDR1)  # TODO change addr
+        client.sendto(msg, ADDR2)  # TODO change addr
+    except:
+        print("Server not responding")
+
+
+def publishing_user(cmd):
+    global NEW_SERVER
+    global NEW_PORT
+    global RQ
+    RQ = RQ + 1
+
+    info = cmd.replace("publish ", "")
+    data = {1: "PUBLISH", 2: RQ, 3: info, 4: SERVER, 5: PORT}
     msg = pickle.dumps(data)
     msg = bytes(f'{len(msg):<{HEADERSIZE}}', FORMAT) + msg
     try:

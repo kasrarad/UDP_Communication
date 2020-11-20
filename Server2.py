@@ -7,8 +7,8 @@ import pickle
 from functions import *  #list_register_file,check_register_file,append_register_file,delete_register_entry,get_users,get_addresses,get_subjects
 
 # IP and PORT of the servers
-PORT1 = 5050
-PORT2 = 9999
+PORT1 = 7777
+PORT2 = 7778
 SERVER1 = socket.gethostbyname(socket.gethostname())
 SERVER2 = socket.gethostbyname(socket.gethostname())
 
@@ -220,6 +220,8 @@ def handle_data(data, addr):
             elif data[1] == "DEL_SUBJECT":
                 handle_subject(data, addr,server,users,addresses,subjects)
                 subjects = get_subjects()
+            elif data[1] == "PUBLISH":
+                handle_publishing(data, addr,server,users,addresses,subjects)
         else:
             print("Message length is more than the buffer size")
     else:

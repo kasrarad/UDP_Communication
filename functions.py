@@ -111,7 +111,7 @@ def get_subjects():
                 break
 
     for entry in reg:  # for each line in the register file
-        temp = {1: entry[3], 2: entry[6]}
+        temp = {1: entry[3], 2: entry[6], 3: (entry[4], entry[5])}
         subs.append(temp)
 
     return subs
@@ -136,7 +136,7 @@ def handle_registration(cmd, addr,server,users,addresses):
         if check:
             users.append(cmd[3])
             addresses.append(addr)
-            #subjects.append([])
+            subjects.append([])
             data = {1: "REGISTERED", 2: cmd[2]}
             sub = []  # initialize empty subject array for future use
             append_register_file({1: "REGISTERED", 2: cmd[2], 3: cmd[3], 4: cmd[4], 5: cmd[5], 6: sub})  # output to text file
@@ -218,7 +218,7 @@ def handle_subject(cmd, addr,server,users,addresses,subjects):
             if subject[1] == name:  # if the username matches then
                 check = True
                 for item in subject[2]:  # for each subject in the users subject list
-                        subs.append(item)  # add the subject to the list
+                    subs.append(item)  # add the subject to the list
 
         for k in range(1, len(data)):  # for each subject in the message
             if data[k] in subs:         # if the subject is present in the users sub list
@@ -241,6 +241,41 @@ def handle_subject(cmd, addr,server,users,addresses,subjects):
     except:
         print("Error sending message")
 
+
+def handle_publishing(cmd, addr, server, users, addresses, subjects):
+    check = 0
+    data = cmd[3].split()
+    name = data[0]
+    words = ""
+
+    for i in range(2, len(data)): # paste the message into a string
+        words += data[i] + " "
+
+    for subject in subjects:  # for each user/subject dict in the subjects object
+        if subject[1] == name:  # check if the user does exist
+            check = 1
+            if data[1] in subject[2]:    # check if the subject is on the user's list
+                check = 3
+
+    if check == 0:
+        data = {1: "PUBLISHED-DENIED", 2: cmd[2], 3: "Name does not exist."}
+    elif check == 1:
+        data = {1: "PUBLISHED-DENIED", 2: cmd[2], 3: "Subject does not exist."}
+    elif check == 2:
+        data = {1: "PUBLISHED-DENIED", 2: cmd[2], 3: "Subject used is not in the user's list."}
+    elif check == 3:
+        data = {1: "MESSAGE", 2: name, 3: data[1], 4: words}
+
+    msg = pickle.dumps(data)
+    msg = bytes(f'{len(msg):<{HEADERSIZE}}', FORMAT) + msg
+    try:
+        # send msg to all users with the subject in their list
+        for subject in subjects:  # for each user/subject dict in the subjects object
+            if data[1] in subject[2]:  # check if the subject is on the user's list
+                # send to the client addr that register the name?
+                server.sendto(msg, subject[3]) # sending to the addr that created the name
+    except:
+        print("Error sending message")
 
 def delete_user(cmd,users):
 
