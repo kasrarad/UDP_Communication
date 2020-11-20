@@ -295,8 +295,8 @@ def handle_publishing(cmd, addr, server, users, addresses, subjects):
         except:
             print("Error sending message")
 
-def delete_user(cmd,users):
 
+def delete_user(cmd,users):
 
     check = False
     index = -1
