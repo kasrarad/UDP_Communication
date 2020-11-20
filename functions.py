@@ -136,7 +136,7 @@ def handle_registration(cmd, addr,server,users,addresses):
         if check:
             users.append(cmd[3])
             addresses.append(addr)
-            subjects.append([])
+            #subjects.append([])
             data = {1: "REGISTERED", 2: cmd[2]}
             sub = []  # initialize empty subject array for future use
             append_register_file({1: "REGISTERED", 2: cmd[2], 3: cmd[3], 4: cmd[4], 5: cmd[5], 6: sub})  # output to text file
@@ -246,6 +246,7 @@ def handle_publishing(cmd, addr, server, users, addresses, subjects):
     check = 0
     data = cmd[3].split()
     name = data[0]
+    subj = data[1]
     words = ""
 
     for i in range(2, len(data)): # paste the message into a string
@@ -254,7 +255,7 @@ def handle_publishing(cmd, addr, server, users, addresses, subjects):
     for subject in subjects:  # for each user/subject dict in the subjects object
         if subject[1] == name:  # check if the user does exist
             check = 1
-            if data[1] in subject[2]:    # check if the subject is on the user's list
+            if subj in subject[2]:    # check if the subject is on the user's list
                 check = 3
 
     if check == 0:
@@ -264,18 +265,23 @@ def handle_publishing(cmd, addr, server, users, addresses, subjects):
     elif check == 2:
         data = {1: "PUBLISHED-DENIED", 2: cmd[2], 3: "Subject used is not in the user's list."}
     elif check == 3:
-        data = {1: "MESSAGE", 2: name, 3: data[1], 4: words}
+        data = {1: "MESSAGE", 2: name, 3: subj, 4: words}
 
     msg = pickle.dumps(data)
     msg = bytes(f'{len(msg):<{HEADERSIZE}}', FORMAT) + msg
-    try:
-        # send msg to all users with the subject in their list
+
+    if check == 3:
         for subject in subjects:  # for each user/subject dict in the subjects object
-            if data[1] in subject[2]:  # check if the subject is on the user's list
-                # send to the client addr that register the name?
-                server.sendto(msg, subject[3]) # sending to the addr that created the name
-    except:
-        print("Error sending message")
+            if subj in subject[2]:  # check if the subject is on the user's list
+                try:
+                    server.sendto(msg, subject[3])
+                except:
+                    print("Error sending message")
+    else:
+        try:
+            server.sendto(msg, addr)
+        except:
+            print("Error sending message")
 
 def delete_user(cmd,users):
 

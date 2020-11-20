@@ -208,6 +208,7 @@ def handle_data(data, addr):
         msg_length = int(data[:HEADERSIZE])
         if msg_length <= 1028:
             data = pickle.loads(data[HEADERSIZE:])
+            subjects = get_subjects()
             if data[1] == "UPDATE-SERVER":
                 SERVER1 = data[2]
                 PORT1 = data[3]
@@ -219,7 +220,6 @@ def handle_data(data, addr):
                 handle_subject(data, addr,server,users,addresses,subjects)
             elif data[1] == "DEL_SUBJECT":
                 handle_subject(data, addr,server,users,addresses,subjects)
-                subjects = get_subjects()
             elif data[1] == "PUBLISH":
                 handle_publishing(data, addr,server,users,addresses,subjects)
         else:

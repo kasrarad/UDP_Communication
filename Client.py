@@ -14,7 +14,8 @@ users = []
 addresses = []
 
 # IP and Port of the client
-PORT = 7781
+#PORT = 7781
+PORT = int(input("Please enter a client port number: "))
 SERVER = socket.gethostbyname(socket.gethostname())
 ADDR = (SERVER, PORT)
 # For servers
