@@ -191,11 +191,12 @@ def handle_subject(cmd, addr,server,users,addresses,subjects):
     if cmd[1] == "ADD_SUBJECT":
         data = cmd[3].split()
         name = data[0]
-        data = data.upper()
-
+        data = [x.upper() for x in data]
         subs = []
+
         for k in range(1, len(data)):
             if data[k] not in available_subj:
+                print(data[k])
                 check = 1
                 break
             if data[k] not in subs:
@@ -221,7 +222,7 @@ def handle_subject(cmd, addr,server,users,addresses,subjects):
     if cmd[1] == "DEL_SUBJECT":
         data = cmd[3].split()
         name = data[0]
-        data = data.upper()
+        data = [x.upper() for x in data]
         subs = []
         for subject in subjects:  # for each user/subject dict in the subjects object
             if subject[1] == name:  # if the username matches then

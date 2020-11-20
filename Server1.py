@@ -202,7 +202,7 @@ def handle_data(data, addr):
 
     if run_server:
         #time.sleep(5)
-        print("Message received from client: " + "IP: " + addr[0] + "Port: " + str(addr[1]))
+        print("Message received from client: " + "IP: " + addr[0] + " Port: " + str(addr[1]))
         # Get message length (from header) and Convert it to the integer
         msg_length = int(data[:HEADERSIZE])
         if msg_length <= 1028:
