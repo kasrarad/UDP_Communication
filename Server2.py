@@ -21,6 +21,7 @@ ADDR = (HOST, PORT)
 MAX_MSG_SIZE = 1500
 FORMAT = 'utf_8'
 
+filename = "register1.pickle"
 users = []
 addresses = []
 subjects = []
@@ -79,9 +80,9 @@ def start_shell():
         cmd = input("zyra> ")
 
         if cmd == "list":
-            list_users()
+            list_users(filename)
         elif cmd == "listregister":
-            list_register_file()
+            list_register_file(filename)
         elif "port" in cmd:
             change_port(cmd)
         elif "ip" in cmd:
@@ -122,10 +123,11 @@ def handle_client():
     global users
     global addresses
     global subjects
+    global filename
 
-    users = get_users()
-    addresses = get_addresses()
-    subjects = get_subjects()
+    users = get_users(filename)
+    addresses = get_addresses(filename)
+    subjects = get_subjects(filename)
 
     while True:
         try:
@@ -200,6 +202,7 @@ def handle_data(data, addr):
     global SERVER1
     global PORT1
     global subjects
+    global filename
 
     if run_server:
         #time.sleep(5)
@@ -208,20 +211,20 @@ def handle_data(data, addr):
         msg_length = int(data[:HEADERSIZE])
         if msg_length <= 1028:
             data = pickle.loads(data[HEADERSIZE:])
-            subjects = get_subjects()
+            subjects = get_subjects(filename)
             if data[1] == "UPDATE-SERVER":
                 SERVER1 = data[2]
                 PORT1 = data[3]
             elif data[1] == "REGISTER":
-                handle_registration(data, addr,server,users,addresses)
+                handle_registration(filename,data, addr,server,users,addresses)
             elif data[1] == "DE-REGISTER":
-                handle_de_registration(data, addr,server,users,addresses,SERVER1,PORT1)
+                handle_de_registration(filename,data, addr,server,users,addresses,SERVER1,PORT1)
             elif data[1] == "ADD_SUBJECT":
-                handle_subject(data, addr,server,users,addresses,subjects)
+                handle_subject(filename,data, addr,server,users,addresses,subjects)
             elif data[1] == "DEL_SUBJECT":
-                handle_subject(data, addr,server,users,addresses,subjects)
+                handle_subject(filename,data, addr,server,users,addresses,subjects)
             elif data[1] == "PUBLISH":
-                handle_publishing(data, addr,server,users,addresses,subjects)
+                handle_publishing(filename,data, addr,server,users,addresses,subjects)
         else:
             print("Message length is more than the buffer size")
     else:

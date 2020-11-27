@@ -7,10 +7,10 @@ HEADERSIZE = 10
 available_subj = ["COEN445", "ENGR301", "SOEN342", "ELEC490"]
 
 
-def list_register_file():
+def list_register_file(filename):
     print("----Register File Contents----" + "\n")
     reg = []
-    with open('register.pickle', 'rb') as handle:
+    with open(filename, 'rb') as handle:
         while 1:
             try:
                 reg.append(pickle.load(handle))
@@ -20,10 +20,10 @@ def list_register_file():
         print(user)
 
 
-def check_register_file(username):
+def check_register_file(filename,username):
     reg = []   # container for register file
     check = True
-    with open('register.pickle', 'rb') as handle:   # open register file, each line is loaded until end of file error
+    with open(filename, 'rb') as handle:   # open register file, each line is loaded until end of file error
         while 1:
             try:
                 reg.append(pickle.load(handle))
@@ -40,17 +40,17 @@ def check_register_file(username):
 
 # TODO add locks when appending,updating, or deleting from file.
 # takes the full register message as an input, TODO add subject array
-def append_register_file(data):
-    with open('register.pickle', 'ab') as handle:
+def append_register_file(filename,data):
+    with open(filename, 'ab') as handle:
         pickle.dump(data, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 # takes username as argument, load file into object, remove username entry from object, overwrite entire register file.
-def delete_register_entry(username):
+def delete_register_entry(filename,username):
     reg = []  # container for register file
     deleted = False
 
-    with open('register.pickle', 'rb') as handle:  # open register file, each line is loaded until end of file error
+    with open(filename, 'rb') as handle:  # open register file, each line is loaded until end of file error
         while 1:
             try:
                 reg.append(pickle.load(handle))
@@ -63,17 +63,17 @@ def delete_register_entry(username):
             deleted = True
             break
 
-    with open('register.pickle', 'wb') as handle:
+    with open(filename, 'wb') as handle:
         for line in reg:
             pickle.dump(line, handle)
 
     return deleted
 
 
-def get_users():
+def get_users(filename):
     reg = []  # container for register file
     users = [] #container for users
-    with open('register.pickle', 'rb') as handle:  # open register file, each line is loaded until end of file error
+    with open(filename, 'rb') as handle:  # open register file, each line is loaded until end of file error
         while 1:
             try:
                 reg.append(pickle.load(handle))
@@ -86,10 +86,10 @@ def get_users():
     return users
 
 
-def get_addresses():
+def get_addresses(filename):
     reg = []  # container for register file
     adds = [] #container for adds
-    with open('register.pickle', 'rb') as handle:  # open register file, each line is loaded until end of file error
+    with open(filename, 'rb') as handle:  # open register file, each line is loaded until end of file error
         while 1:
             try:
                 reg.append(pickle.load(handle))
@@ -102,10 +102,10 @@ def get_addresses():
     return adds
 
 
-def get_subjects():
+def get_subjects(filename):
     reg = []  # container for register file
     subs = []  # container for subjects
-    with open('register.pickle', 'rb') as handle:  # open register file, each line is loaded until end of file error
+    with open(filename, 'rb') as handle:  # open register file, each line is loaded until end of file error
         while 1:
             try:
                 reg.append(pickle.load(handle))
@@ -119,16 +119,16 @@ def get_subjects():
     return subs
 
 
-def list_users():
-    users = get_users()
-    addresses = get_addresses()
+def list_users(filename):
+    users = get_users(filename)
+    addresses = get_addresses(filename)
     print("----Users----" + "\n")
     for i in range(len(users)):
         results = str(i) + "    " + str(addresses[i][0]) + "    " + str(addresses[i][1]) + "\n"
         print(results)
 
 
-def handle_registration(cmd, addr,server,users,addresses):
+def handle_registration(filename,cmd, addr,server,users,addresses):
 
     if cmd[1] == "REGISTER":
         check = True
@@ -141,7 +141,7 @@ def handle_registration(cmd, addr,server,users,addresses):
             #subjects.append([])
             data = {1: "REGISTERED", 2: cmd[2]}
             sub = []  # initialize empty subject array for future use
-            append_register_file({1: "REGISTERED", 2: cmd[2], 3: cmd[3], 4: cmd[4], 5: cmd[5], 6: sub})  # output to text file
+            append_register_file(filename,{1: "REGISTERED", 2: cmd[2], 3: cmd[3], 4: cmd[4], 5: cmd[5], 6: sub})  # output to text file
         else:
             data = {1: "REGISTER-DENIED", 2: cmd[2], 3: "Name already exist. Use another name"}
 
@@ -153,7 +153,7 @@ def handle_registration(cmd, addr,server,users,addresses):
         print("Error sending message")
 
 
-def handle_de_registration(cmd, addr,server,users,addresses,ip_addr,port_num):
+def handle_de_registration(filename,cmd, addr,server,users,addresses,ip_addr,port_num):
 
     if cmd[1] == "DE-REGISTER":
         check = False
@@ -167,7 +167,7 @@ def handle_de_registration(cmd, addr,server,users,addresses,ip_addr,port_num):
             del users[index]
             del addresses[index]
             data = {1: "DE-REGISTER", 2: cmd[2]}
-            delete_register_entry(cmd[3])  # remove from textfile
+            delete_register_entry(filename,[3])  # remove from textfile
             msg = pickle.dumps(data)
             msg = bytes(f'{len(msg):<{HEADERSIZE}}', FORMAT) + msg
             try:
@@ -186,7 +186,7 @@ def handle_de_registration(cmd, addr,server,users,addresses,ip_addr,port_num):
                 print("Error sending message")
 
 
-def handle_subject(cmd, addr,server,users,addresses,subjects):
+def handle_subject(filename,cmd, addr,server,users,addresses,subjects):
     check = 0
     if cmd[1] == "ADD_SUBJECT":
         data = cmd[3].split()
@@ -208,10 +208,10 @@ def handle_subject(cmd, addr,server,users,addresses,subjects):
                     for item in subject[2]:  # for each subject in the users subject list
                         if item not in subs:  # if the subject is not part of the updated list then add it
                             subs.append(item)  # subs now contains old list plus new list
-                    delete_register_entry(name)  # delete the entry in the file
+                    delete_register_entry(filename,name)  # delete the entry in the file
                     new = {1: "REGISTERED", 2: cmd[2], 3: name, 4: cmd[4], 5: cmd[5], 6: subs}  # make new dict
-                    append_register_file(new)  # add the info again
-                    subjects = get_subjects()  # refresh global subjects array
+                    append_register_file(filename,new)  # add the info again
+                    subjects = get_subjects(filename)  # refresh global subjects array
         if check == 0:
             data = {1: "SUBJECTS-REJECTED", 2: cmd[2], 3: "Name does not exist."}
         elif check == 1:
@@ -234,10 +234,10 @@ def handle_subject(cmd, addr,server,users,addresses,subjects):
             if data[k] in subs:         # if the subject is present in the users sub list
                 subs.remove(data[k])    # remove that value from the list
 
-        delete_register_entry(name)  # delete the entry in the file
+        delete_register_entry(filename,name)  # delete the entry in the file
         new = {1: "REGISTERED", 2: cmd[2], 3: name, 4: cmd[4], 5: cmd[5], 6: subs}  # make new dict
-        append_register_file(new)  # add the info again
-        subjects = get_subjects()  # refresh global subjects array
+        append_register_file(filename,new)  # add the info again
+        subjects = get_subjects(filename)  # refresh global subjects array
 
         if check:
             data = {1: "SUBJECTS-UPDATED", 2: cmd[2], 3: subs}
@@ -252,7 +252,7 @@ def handle_subject(cmd, addr,server,users,addresses,subjects):
         print("Error sending message")
 
 
-def handle_publishing(cmd, addr, server, users, addresses, subjects):
+def handle_publishing(filename,cmd, addr, server, users, addresses, subjects):
     check = 0
     data = cmd[3].split()
     name = data[0]
@@ -296,7 +296,7 @@ def handle_publishing(cmd, addr, server, users, addresses, subjects):
             print("Error sending message")
 
 
-def delete_user(cmd,users):
+def delete_user(filename,cmd,users):
 
     check = False
     index = -1
@@ -307,7 +307,7 @@ def delete_user(cmd,users):
     if check:
         del users[index]
         #del addresses[index]
-        delete_register_entry(cmd[3])
+        delete_register_entry(filename,cmd[3])
 
 
 
