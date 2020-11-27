@@ -1,4 +1,4 @@
-import pickle
+import pickle5 as pickle
 
 MAX_MSG_SIZE = 1500
 FORMAT = 'utf_8'
