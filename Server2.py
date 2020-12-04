@@ -25,6 +25,7 @@ filename = "register1.pickle"
 users = []
 addresses = []
 subjects = []
+publish_log = "log2.pickle"
 
 change_ip_port = False
 run_server = False
@@ -87,6 +88,8 @@ def start_shell():
             change_port(cmd)
         elif "ip" in cmd:
             change_ip(cmd)
+        elif "log" in cmd:
+            display_log(publish_log)
         else:
             print("Wrong Command")
 
@@ -224,7 +227,7 @@ def handle_data(data, addr):
             elif data[1] == "DEL_SUBJECT":
                 handle_subject(filename,data, addr,server,users,addresses,subjects)
             elif data[1] == "PUBLISH":
-                handle_publishing(filename,data, addr,server,users,addresses,subjects)
+                handle_publishing(filename,data, addr,server,users,addresses,subjects,publish_log)
         else:
             print("Message length is more than the buffer size")
     else:

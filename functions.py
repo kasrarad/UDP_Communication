@@ -1,4 +1,4 @@
-import pickle5 as pickle
+import pickle as pickle
 
 MAX_MSG_SIZE = 1500
 FORMAT = 'utf_8'
@@ -68,6 +68,19 @@ def delete_register_entry(filename,username):
             pickle.dump(line, handle)
 
     return deleted
+
+
+def display_log(filename):
+    print("----Publish Message Log----" + "\n")
+    log = []
+    with open(filename, 'rb') as handle:
+        while 1:
+            try:
+                log.append(pickle.load(handle))
+            except EOFError:
+                break
+    for user in log:
+        print(user)
 
 
 def get_users(filename):
@@ -252,7 +265,7 @@ def handle_subject(filename,cmd, addr,server,users,addresses,subjects):
         print("Error sending message")
 
 
-def handle_publishing(filename,cmd, addr, server, users, addresses, subjects):
+def handle_publishing(filename,cmd, addr, server, users, addresses, subjects, publish_log):
     check = 0
     data = cmd[3].split()
     name = data[0]
@@ -280,6 +293,7 @@ def handle_publishing(filename,cmd, addr, server, users, addresses, subjects):
         data = {1: "MESSAGE", 2: name, 3: subj, 4: words}
 
     msg = pickle.dumps(data)
+    append_register_file(publish_log, data)
     msg = bytes(f'{len(msg):<{HEADERSIZE}}', FORMAT) + msg
 
     if check == 3:
