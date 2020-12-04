@@ -293,7 +293,7 @@ def handle_publishing(filename,cmd, addr, server, users, addresses, subjects, pu
         data = {1: "MESSAGE", 2: name, 3: subj, 4: words}
 
     msg = pickle.dumps(data)
-    append_register_file(publish_log, data)
+    append_register_file(publish_log, data)    # writing message into the log file
     msg = bytes(f'{len(msg):<{HEADERSIZE}}', FORMAT) + msg
 
     if check == 3:

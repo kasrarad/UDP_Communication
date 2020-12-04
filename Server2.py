@@ -21,7 +21,7 @@ ADDR = (HOST, PORT)
 MAX_MSG_SIZE = 1500
 FORMAT = 'utf_8'
 
-filename = "register1.pickle"
+filename = "register2.pickle"
 users = []
 addresses = []
 subjects = []
