@@ -46,6 +46,8 @@ def start_shell():
             break
         elif "register" in cmd:
             register_user(cmd)
+        elif "update_reg" in cmd:
+            update_register(cmd)
         elif "de-reg" in cmd:
             de_register_user(cmd)
         elif "add_subject" in cmd:
@@ -64,6 +66,21 @@ def register_user(cmd):
 
     user_name = cmd.replace("register ", "")
     data = {1: "REGISTER", 2: RQ, 3: user_name, 4: SERVER, 5: PORT}
+    msg = pickle.dumps(data)
+    msg = bytes(f'{len(msg):<{HEADERSIZE}}', FORMAT) + msg
+    try:
+        print(ADDR1 + ADDR2)
+        client.sendto(msg, ADDR1)
+        client.sendto(msg, ADDR2)
+    except:
+        print("Server not responding")
+
+def update_register(cmd):
+    global RQ
+    RQ = RQ + 1
+
+    user_name = cmd.replace("update_reg ", "")
+    data = {1: "UPDATE", 2: RQ, 3: user_name, 4: SERVER, 5: PORT}
     msg = pickle.dumps(data)
     msg = bytes(f'{len(msg):<{HEADERSIZE}}', FORMAT) + msg
     try:

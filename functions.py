@@ -1,4 +1,4 @@
-import pickle as pickle
+import pickle5 as pickle
 
 MAX_MSG_SIZE = 1500
 FORMAT = 'utf_8'
@@ -131,6 +131,14 @@ def get_subjects(filename):
 
     return subs
 
+def get_a_users_subjects(username,subjects):
+    subs = []
+    for subject in subjects:  # for each user/subject dict in the subjects object
+        if subject[1] == username:  # if the username matches then
+            for item in subject[2]:  # for each subject in the users subject list
+               subs.append(item)    #append subject
+    return subs
+
 
 def list_users(filename):
     users = get_users(filename)
@@ -141,7 +149,7 @@ def list_users(filename):
         print(results)
 
 
-def handle_registration(filename,cmd, addr,server,users,addresses):
+def handle_registration(filename,cmd, addr,server,users,addresses,subjects):
 
     if cmd[1] == "REGISTER":
         check = True
@@ -157,6 +165,20 @@ def handle_registration(filename,cmd, addr,server,users,addresses):
             append_register_file(filename,{1: "REGISTERED", 2: cmd[2], 3: cmd[3], 4: cmd[4], 5: cmd[5], 6: sub})  # output to text file
         else:
             data = {1: "REGISTER-DENIED", 2: cmd[2], 3: "Name already exist. Use another name"}
+    elif cmd[1] == "UPDATE":
+        check = False
+        for user_name in users:
+            if user_name == cmd[3]:
+                check = True
+        if check:
+
+            data = {1: "UPDATE-CONFIRMED", 2: cmd[2], 3: cmd[3], 4: cmd[4], 5: cmd[5]}
+            sub = get_a_users_subjects(cmd[3],subjects)
+            delete_register_entry(filename,cmd[3])
+            append_register_file(filename, {1: "REGISTERED", 2: cmd[2], 3: cmd[3], 4: cmd[4], 5: cmd[5],
+                                            6: sub})  # output to text file
+        else:
+            data = {1: "UPDATE-DENIED", 2: cmd[2], 3: "Name does not exist."}
 
     msg = pickle.dumps(data)
     msg = bytes(f'{len(msg):<{HEADERSIZE}}', FORMAT) + msg
@@ -179,8 +201,8 @@ def handle_de_registration(filename,cmd, addr,server,users,addresses,ip_addr,por
         if check:
             del users[index]
             del addresses[index]
-            data = {1: "DE-REGISTER", 2: cmd[2]}
-            delete_register_entry(filename,[3])  # remove from textfile
+            data = {1: "DE-REGISTER", 2: cmd[3]}
+            delete_register_entry(filename,cmd[3])  # remove from textfile
             msg = pickle.dumps(data)
             msg = bytes(f'{len(msg):<{HEADERSIZE}}', FORMAT) + msg
             try:

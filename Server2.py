@@ -219,7 +219,9 @@ def handle_data(data, addr):
                 SERVER1 = data[2]
                 PORT1 = data[3]
             elif data[1] == "REGISTER":
-                handle_registration(filename,data, addr,server,users,addresses)
+                handle_registration(filename,data, addr,server,users,addresses,subjects)
+            elif data[1] == "UPDATE":
+                handle_registration(filename,data, addr,server,users,addresses,subjects)
             elif data[1] == "DE-REGISTER":
                 handle_de_registration(filename,data, addr,server,users,addresses,SERVER1,PORT1)
             elif data[1] == "ADD_SUBJECT":
